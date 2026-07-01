@@ -5,7 +5,7 @@ import json
 import os
 from datetime import time
 
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = os.getenv("TOKEN")
 USERS_FILE = "users.json"
 
 def save_user(user_id):
@@ -45,9 +45,8 @@ async def send_gotham_message(context: ContextTypes.DEFAULT_TYPE):
     text = (
         "Gotham needs Batman\n"
         "Batman needs Vitamin D\n"
-        "The fate of Gotham is in your hands..\n"
-        "Take your Vitamin D.\n\n"
-        "-The people of Gotham"
+        "Take your Vitamin D.\n"
+        "- Gotham"
     )
 
     for user_id in users:
@@ -55,6 +54,7 @@ async def send_gotham_message(context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=user_id, text=text)
         except Exception:
             pass
+
 
 app = Application.builder().token(TOKEN).build()
 
