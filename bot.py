@@ -1,34 +1,32 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from zoneinfo import ZoneInfo
-import json
-import os
 from datetime import time
+from zoneinfo import ZoneInfo
+import os
+import sqlite3
 
 TOKEN = os.getenv("TOKEN")
-USERS_FILE = "users.json"
+
+# ---------------- DB ----------------
+conn = sqlite3.connect("users.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY
+)
+""")
+conn.commit()
 
 def save_user(user_id):
-    if not os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "w") as f:
-            json.dump([], f)
-
-    with open(USERS_FILE, "r") as f:
-        users = json.load(f)
-
-    if user_id not in users:
-        users.append(user_id)
-
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f)
+    cursor.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+    conn.commit()
 
 def get_users():
-    if not os.path.exists(USERS_FILE):
-        return []
+    cursor.execute("SELECT user_id FROM users")
+    return [row[0] for row in cursor.fetchall()]
 
-    with open(USERS_FILE, "r") as f:
-        return json.load(f)
-
+# ---------------- BOT ----------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     save_user(user_id)
@@ -45,7 +43,7 @@ async def send_gotham_message(context: ContextTypes.DEFAULT_TYPE):
     text = (
         "Gotham needs Batman\n"
         "Batman needs Vitamin D\n"
-        "Take your Vitamin D.\n"
+        "Take your Vitamin D.\n\n"
         "- Gotham"
     )
 
@@ -54,7 +52,6 @@ async def send_gotham_message(context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=user_id, text=text)
         except Exception:
             pass
-
 
 app = Application.builder().token(TOKEN).build()
 
@@ -67,5 +64,4 @@ app.job_queue.run_monthly(
 )
 
 print("Bot is running...")
-
 app.run_polling()
